@@ -1,8 +1,8 @@
 function output = ...
-  ConvertToObservationProbatility(f0_structure, frame_shift)
+  ConvertToObservationProbability(f0_structure, frame_shift)
 % Convert wavelet filter bank output to ovserbation probability map
 %
-%   output = ConvertToObservationProbatility(f0_structure, frame_shift)
+%   output = ConvertToObservationProbability(f0_structure, frame_shift)
 %
 % Arguments
 %
