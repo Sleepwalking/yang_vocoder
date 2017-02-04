@@ -99,32 +99,33 @@ end;
 sigma_peak = channels_in_octave * peak_spread;
 sigma_deviation = channels_in_octave * deviation_spread;
 for frame_id = 2:n_frames
-    sum_score = 0;
+    % these are row vectors
+    past_channel = node_str(frame_id - 1).peak_channel;
+    current_channel = node_str(frame_id).peak_channel;
+    % the following code seems to run even slower because # of peaks is usually small
+    % (except if you're a fan of automatic broadcast, drop repmat and see if it's faster)
+    %proximity_score = ... % size = current x past
+    %  exp(-((repmat(current_channel', 1, length(past_channel)) - ...
+    %    repmat(past_channel, length(current_channel), 1)) / sigma_peak) .^ 2);
+    deviation_score = exp(-((current_channel - median_channel) / ...
+      sigma_deviation) .^ 2);
+    %contribution_score = proximity_score .* ...
+    %  repmat(node_str(frame_id - 1).score', length(current_channel), 1) .* ...
+    %  repmat(deviation_score', 1, length(past_channel));
     for current_peak_id = 1:node_str(frame_id).n_peaks
-        current_channel = node_str(frame_id).peak_channel(current_peak_id);
-        contribution_score = zeros(node_str(frame_id - 1).n_peaks, 1);
-        for past_node_id = 1:node_str(frame_id - 1).n_peaks
-            past_channel = ...
-              node_str(frame_id - 1).peak_channel(past_node_id);
-            proximity_score = ...
-              exp(-((current_channel - past_channel) / sigma_peak) .^ 2);
-            deviation_score = exp(-((current_channel - median_channel) / ...
-                                  sigma_deviation) .^ 2);
-            contribution_score(past_node_id) = proximity_score * ...
-              node_str(frame_id - 1).score(past_node_id) * deviation_score;
-        end;
+        proximity_score = ...
+          exp(-((current_channel(current_peak_id) - past_channel) / sigma_peak) .^ 2);
+        contribution_score = proximity_score .* node_str(frame_id - 1).score' ...
+          * deviation_score(current_peak_id);
         [max_value, max_channel_id] = max(contribution_score);
         node_str(frame_id).score(current_peak_id) = ...
             max_value * node_str(frame_id).probability(current_peak_id) * ...
             ((node_str(frame_id).peak_channel(current_peak_id) > ...
             ac_channel) + 0.000001);
-        sum_score = sum_score + node_str(frame_id).score(current_peak_id);
         node_str(frame_id).origin(current_peak_id) = max_channel_id;
     end;
-    for current_peak_id = 1:node_str(frame_id).n_peaks
-        node_str(frame_id).score(current_peak_id) = ...
-            node_str(frame_id).score(current_peak_id) / sum_score;
-    end;
+    node_str(frame_id).score = node_str(frame_id).score / ...
+      sum(node_str(frame_id).score);
 end;
 %% back track
 best_channel = zeros(n_frames, 1);
