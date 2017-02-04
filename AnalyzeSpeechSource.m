@@ -98,5 +98,7 @@ output = struct('sampling_frequency', fs_original, ...
 if conditions.enable_f0_refinement
   output.f0 = aperiodicity.refined_f0;
   output.aperiodicity_matrix = aperiodicity.aperiodicity_matrix;
+else
+  output.f0 = initial_f0_structure.f0_initial;
 end;
 end
